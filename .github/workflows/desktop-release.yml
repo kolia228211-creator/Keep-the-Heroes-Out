@@ -47,18 +47,34 @@ jobs:
         run: |
           V=$(node -p "require('./package.json').version")
           echo "version=$V" >> "$GITHUB_OUTPUT"
-          ASSETS=$(gh release view "v$V" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq 'select(.isDraft==false) | [.assets[].name] | join(",")' 2>/dev/null || true)
-          if [[ "$ASSETS" == *"HoduHeroyamNema-Setup-$V.exe"* && "$ASSETS" == *"latest.yml"* ]]; then
-            echo "publish=false" >> "$GITHUB_OUTPUT"; echo "Реліз v$V уже опубліковано — нічого не роблю."
-          else
-            if gh release view "v$V" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-              echo "Реліз v$V неповний (або чернетка) — видаляю й збираю наново."
-              gh release delete "v$V" --repo "$GITHUB_REPOSITORY" --cleanup-tag -y
-            fi
-            echo "publish=true" >> "$GITHUB_OUTPUT"; echo "Публікую нову версію програми v$V."
+          API="repos/$GITHUB_REPOSITORY/releases"
+          OK=$(gh api "$API?per_page=100" --jq "[.[] | select(.tag_name==\"v$V\" and .draft==false and any(.assets[]; .name==\"HoduHeroyamNema-Setup-$V.exe\") and any(.assets[]; .name==\"latest.yml\"))] | length")
+          if [ "$OK" != "0" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"; echo "Реліз v$V уже опубліковано повністю — нічого не роблю."
+            exit 0
           fi
+          # прибрати неповні релізи й чернетки цієї версії (могли лишитися від невдалих запусків)
+          for id in $(gh api "$API?per_page=100" --jq ".[] | select(.tag_name==\"v$V\") | .id"); do
+            echo "Видаляю неповний реліз $id"; gh api -X DELETE "$API/$id"
+          done
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/v$V" 2>/dev/null || true
+          echo "publish=true" >> "$GITHUB_OUTPUT"; echo "Публікую нову версію програми v$V."
 
-      - name: Зібрати інсталятор і завантажити в чернетку релізу
+      - name: Створити чернетку релізу
+        if: steps.ver.outputs.publish == 'true' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V=${{ steps.ver.outputs.version }}
+          cat > notes.md <<NOTES
+          **Як встановити:** завантажте \`HoduHeroyamNema-Setup-$V.exe\` нижче й запустіть.
+          Якщо Windows покаже «Windows захистила ваш ПК» — натисніть **«Докладніше» → «Виконати однаково»** (програма не має платного підпису).
+
+          Вже встановлена програма оновиться сама. Нові версії гри завантажуються під час запуску, перевстановлювати нічого не треба.
+          NOTES
+          gh release create "v$V" --repo "$GITHUB_REPOSITORY" --draft --title "Програма $V" --target "$GITHUB_SHA" --notes-file notes.md
+
+      - name: Зібрати інсталятор і завантажити в чернетку
         if: steps.ver.outputs.publish == 'true' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -70,14 +86,21 @@ jobs:
             exit 1
           fi
 
-      - name: Опублікувати реліз
+      - name: Перевірити й опублікувати реліз
         if: steps.ver.outputs.publish == 'true' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           V=${{ steps.ver.outputs.version }}
-          gh release edit "v$V" --repo "$GITHUB_REPOSITORY" --draft=false --latest --title "Програма $V" --target "$GITHUB_SHA"
-          gh release view "v$V" --repo "$GITHUB_REPOSITORY" --json assets --jq '[.assets[].name]'
+          API="repos/$GITHUB_REPOSITORY/releases"
+          IDS=$(gh api "$API?per_page=100" --jq ".[] | select(.tag_name==\"v$V\" and .draft) | .id")
+          if [ "$(echo "$IDS" | wc -w)" != "1" ]; then echo "::error::Очікувалась одна чернетка v$V, знайдено: $IDS"; exit 1; fi
+          ASSETS=$(gh api "$API/$IDS" --jq '[.assets[].name] | join(" ")')
+          echo "Файли релізу: $ASSETS"
+          for f in "HoduHeroyamNema-Setup-$V.exe" "latest.yml"; do
+            case " $ASSETS " in *" $f "*) ;; *) echo "::error::У релізі немає $f"; exit 1;; esac
+          done
+          gh api -X PATCH "$API/$IDS" -F draft=false -f make_latest=true --jq '.html_url'
 
       - name: Зібрати інсталятор (без публікації, лише вручну)
         if: github.event_name == 'workflow_dispatch' && (steps.ver.outputs.publish != 'true' || github.ref != 'refs/heads/main')
