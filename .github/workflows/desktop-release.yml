@@ -47,17 +47,37 @@ jobs:
         run: |
           V=$(node -p "require('./package.json').version")
           echo "version=$V" >> "$GITHUB_OUTPUT"
-          if gh release view "v$V" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "publish=false" >> "$GITHUB_OUTPUT"; echo "Реліз v$V уже є — лише збираю."
+          ASSETS=$(gh release view "v$V" --repo "$GITHUB_REPOSITORY" --json isDraft,assets --jq 'select(.isDraft==false) | [.assets[].name] | join(",")' 2>/dev/null || true)
+          if [[ "$ASSETS" == *"HoduHeroyamNema-Setup-$V.exe"* && "$ASSETS" == *"latest.yml"* ]]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"; echo "Реліз v$V уже опубліковано — нічого не роблю."
           else
+            if gh release view "v$V" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo "Реліз v$V неповний (або чернетка) — видаляю й збираю наново."
+              gh release delete "v$V" --repo "$GITHUB_REPOSITORY" --cleanup-tag -y
+            fi
             echo "publish=true" >> "$GITHUB_OUTPUT"; echo "Публікую нову версію програми v$V."
           fi
 
-      - name: Зібрати й опублікувати інсталятор
+      - name: Зібрати інсталятор і завантажити в чернетку релізу
         if: steps.ver.outputs.publish == 'true' && github.ref == 'refs/heads/main'
-        run: npm run release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -o pipefail
+          if ! npm run release 2>&1 | tee build.log; then
+            # показати хвіст журналу в примітках запуску (їх видно навіть без доступу до логів)
+            tail -n 40 build.log | sed 's/%/%25/g' | while IFS= read -r l; do echo "::error::$l"; done
+            exit 1
+          fi
+
+      - name: Опублікувати реліз
+        if: steps.ver.outputs.publish == 'true' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V=${{ steps.ver.outputs.version }}
+          gh release edit "v$V" --repo "$GITHUB_REPOSITORY" --draft=false --latest --title "Програма $V" --target "$GITHUB_SHA"
+          gh release view "v$V" --repo "$GITHUB_REPOSITORY" --json assets --jq '[.assets[].name]'
 
       - name: Зібрати інсталятор (без публікації, лише вручну)
         if: github.event_name == 'workflow_dispatch' && (steps.ver.outputs.publish != 'true' || github.ref != 'refs/heads/main')

@@ -80,7 +80,7 @@
         "provider": "github",
         "owner": "kolia228211-creator",
         "repo": "keep-the-heroes-out",
-        "releaseType": "release"
+        "releaseType": "draft"
       }
     ]
   }
