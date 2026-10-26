@@ -1,15 +1,24 @@
 # Збирає інсталятор Windows і публікує його в GitHub Releases.
-# Запуск: створити тег vX.Y.Z (наприклад v0.1.0), що збігається з версією в desktop/package.json,
-# або вручну: вкладка Actions → «Збірка програми для Windows» → Run workflow.
+# Публікація відбувається сама, коли в main з'являється нова версія в desktop/package.json
+# (реліза vX.Y.Z ще немає). Інакше лише тести гри й оновлювача.
+# Вручну: вкладка Actions → «Збірка програми для Windows» → Run workflow (готовий .exe — в артефактах).
 name: Збірка програми для Windows
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+    paths:
+      - 'desktop/**'
+      - 'game/**'
+      - '.github/workflows/desktop-release.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: desktop-release
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -18,6 +27,7 @@ jobs:
     defaults:
       run:
         working-directory: desktop
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -27,31 +37,36 @@ jobs:
           cache: npm
           cache-dependency-path: desktop/package-lock.json
 
-      - name: Перевірити, що тег збігається з версією програми
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          PKG=$(node -p "require('./package.json').version")
-          TAG=${GITHUB_REF_NAME#v}
-          if [ "$PKG" != "$TAG" ]; then echo "Тег v$TAG не збігається з версією $PKG у desktop/package.json"; exit 1; fi
-
       - run: npm ci
       - run: npm test
 
+      - name: Чи є вже реліз цієї версії
+        id: ver
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V=$(node -p "require('./package.json').version")
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          if gh release view "v$V" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"; echo "Реліз v$V уже є — лише збираю."
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"; echo "Публікую нову версію програми v$V."
+          fi
+
       - name: Зібрати й опублікувати інсталятор
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.ver.outputs.publish == 'true' && github.ref == 'refs/heads/main'
         run: npm run release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Зібрати інсталятор (без публікації)
-        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+      - name: Зібрати інсталятор (без публікації, лише вручну)
+        if: github.event_name == 'workflow_dispatch' && (steps.ver.outputs.publish != 'true' || github.ref != 'refs/heads/main')
         run: npm run dist
 
       - uses: actions/upload-artifact@v4
         with:
-          name: installer
+          name: installer-${{ steps.ver.outputs.version }}
           path: |
             desktop/dist/*.exe
             desktop/dist/latest.yml
-          if-no-files-found: error
+          if-no-files-found: ignore
