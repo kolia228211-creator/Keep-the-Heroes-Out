@@ -8,9 +8,12 @@ const fs = require('fs');
 const { pathToFileURL } = require('url');
 const cfg = require('./config');
 const { GameUpdater } = require('./game-updater');
+const { Lan, addresses } = require('./lan');
 
 // Дані в %APPDATA%\HoduHeroyamNema (латиницею, без пробілів)
-app.setPath('userData', path.join(app.getPath('appData'), cfg.DATA_DIR_NAME));
+// HHN_PROFILE=2 — друга копія програми на тому самому ПК (щоб перевірити гру по мережі самому)
+const profile = (process.env.HHN_PROFILE || '').replace(/[^\w-]/g, '');
+app.setPath('userData', path.join(app.getPath('appData'), cfg.DATA_DIR_NAME + (profile ? '-' + profile : '')));
 app.setAppUserModelId('ua.kolia.hodu-heroyam-nema');
 
 protocol.registerSchemesAsPrivileged([
@@ -101,6 +104,10 @@ function createWindow() {
     }
   });
 
+  win.webContents.on('did-start-navigation', (_e, _url, inPlace, isMainFrame) => {
+    if (isMainFrame && !inPlace && lan.mode) lan.leave().catch(() => {});
+  });
+
   win.loadFile(path.join(__dirname, 'launcher.html'));
 }
 
@@ -175,6 +182,25 @@ function checkShellUpdate() {
   autoUpdater.on('error', e => log('[shell] помилка:', e && e.message));
   autoUpdater.checkForUpdates().catch(e => log('[shell] перевірка не вдалася:', e.message));
 }
+
+/* ---------- гра по мережі ---------- */
+const lan = new Lan({
+  emit: ev => { if (win && !win.isDestroyed()) win.webContents.send('net:event', ev); },
+  log,
+});
+// Помилки повертаємо як {error}, щоб гра показала зрозумілий текст без службових префіксів
+const safe = fn => async (_e, arg) => {
+  try { return { ok: true, ...(await fn(arg || {})) }; }
+  catch (e) { log('[lan]', e.message); return { ok: false, error: e.message }; }
+};
+ipcMain.handle('net:host', safe(o => lan.host({ port: o.port, name: o.name, gv: o.gv })));
+ipcMain.handle('net:join', safe(o => lan.join({ addr: o.addr, name: o.name, gv: o.gv })));
+ipcMain.handle('net:leave', safe(async () => { await lan.leave(); return {}; }));
+ipcMain.handle('net:set', safe(o => ({ sent: lan.set(o.data) })));
+ipcMain.handle('net:seat', safe(o => { lan.seat(o.seat); return {}; }));
+ipcMain.handle('net:status', safe(() => lan.status()));
+ipcMain.handle('net:addresses', safe(() => ({ addresses: addresses() })));
+app.on('before-quit', () => { lan.leave().catch(() => {}); });
 
 /* ---------- IPC ---------- */
 ipcMain.handle('hhn:info', () => ({

@@ -9,7 +9,7 @@ const path = require('path');
 const ROOT = __dirname;
 const SRC = path.join(ROOT, 'src');
 const DIST = path.join(ROOT, 'dist');
-const JS_ORDER = ['data.js', 'scen.js', 'engine.js', 'art.js', 'ui.js', 'tut.js'];
+const JS_ORDER = ['data.js', 'scen.js', 'engine.js', 'art.js', 'ui.js', 'net.js', 'tut.js'];
 
 const read = f => fs.readFileSync(path.join(SRC, f), 'utf8');
 const version = fs.readFileSync(path.join(ROOT, 'VERSION'), 'utf8').trim();

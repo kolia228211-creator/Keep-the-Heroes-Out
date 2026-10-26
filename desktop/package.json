@@ -1,7 +1,7 @@
 {
   "name": "hodu-heroyam-nema",
   "productName": "Ходу героям нема",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Ходу героям нема! — фанатська десктопна версія настільної гри",
   "author": "kolia228211-creator",
   "license": "UNLICENSED",
@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "adm-zip": "^0.5.18",
-    "electron-updater": "^6.8.11"
+    "electron-updater": "^6.8.11",
+    "ws": "^8.22.0"
   },
   "devDependencies": {
     "electron": "^45.0.0",

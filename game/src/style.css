@@ -174,3 +174,14 @@ button.cont{display:flex;flex-direction:column;align-items:center;gap:2px}button
  #game.tutmode #boardwrap{padding-left:0;padding-bottom:170px}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ---------- гра по мережі ---------- */
+.lanform{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 10px;align-items:center}
+.lanform input{min-width:0}
+.lanbox{display:grid;gap:6px;background:#0004;border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0}
+.lanaddr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.lanaddr code{font:16px var(--fm);background:#000a;padding:4px 8px;border-radius:6px;color:#fff;user-select:all}
+.lanaddr small{color:var(--mu)}.lanaddr.radmin code{border:1px solid var(--ok)}.lanaddr.radmin small{color:var(--ok)}.lanaddr button{padding:3px 8px;font-size:13px}
+.lanwarn{margin:0;color:var(--ac);font-size:14px}.lanerr{margin:0;color:var(--bad);font-size:14px}
+.lanpeers{display:grid;gap:4px;margin-bottom:8px}.lanpeer{display:flex;align-items:center;gap:6px;background:#0003;padding:5px 8px;border-radius:8px}.lanpeer .mu{margin-left:auto}
+.lanpeer .dot{background:#555;margin-right:0}
+.lanbadge{border-color:var(--ok)!important;color:var(--ok)}
+.opt span small{font-weight:400}
