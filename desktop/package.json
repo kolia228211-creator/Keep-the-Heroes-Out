@@ -1,0 +1,87 @@
+{
+  "name": "hodu-heroyam-nema",
+  "productName": "Ходу героям нема",
+  "version": "0.1.0",
+  "description": "Ходу героям нема! — фанатська десктопна версія настільної гри",
+  "author": "kolia228211-creator",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "game:build": "node ../game/build.js",
+    "game:release": "node scripts/release-game.js",
+    "start": "npm run game:build && electron .",
+    "test": "node --test \"test/**/*.test.js\"",
+    "dist": "npm run game:build && electron-builder --win --x64 --publish never",
+    "release": "npm run game:build && electron-builder --win --x64 --publish always"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.18",
+    "electron-updater": "^6.8.11"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0",
+    "jsdom": "^24.1.3"
+  },
+  "build": {
+    "appId": "ua.kolia.hodu-heroyam-nema",
+    "productName": "Ходу героям нема",
+    "executableName": "HoduHeroyamNema",
+    "copyright": "Неофіційна фанатська версія для особистої гри",
+    "artifactName": "HoduHeroyamNema-Setup-${version}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../game/dist",
+        "to": "game",
+        "filter": [
+          "index.html",
+          "version.json",
+          "assets/**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Ходу героям нема",
+      "uninstallDisplayName": "Ходу героям нема",
+      "installerLanguages": [
+        "uk_UA"
+      ],
+      "language": "1058",
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "kolia228211-creator",
+        "repo": "keep-the-heroes-out",
+        "releaseType": "release"
+      }
+    ]
+  }
+}

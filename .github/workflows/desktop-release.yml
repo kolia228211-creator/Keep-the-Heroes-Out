@@ -1,0 +1,57 @@
+# Збирає інсталятор Windows і публікує його в GitHub Releases.
+# Запуск: створити тег vX.Y.Z (наприклад v0.1.0), що збігається з версією в desktop/package.json,
+# або вручну: вкладка Actions → «Збірка програми для Windows» → Run workflow.
+name: Збірка програми для Windows
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Перевірити, що тег збігається з версією програми
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          PKG=$(node -p "require('./package.json').version")
+          TAG=${GITHUB_REF_NAME#v}
+          if [ "$PKG" != "$TAG" ]; then echo "Тег v$TAG не збігається з версією $PKG у desktop/package.json"; exit 1; fi
+
+      - run: npm ci
+      - run: npm test
+
+      - name: Зібрати й опублікувати інсталятор
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm run release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Зібрати інсталятор (без публікації)
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        run: npm run dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: |
+            desktop/dist/*.exe
+            desktop/dist/latest.yml
+          if-no-files-found: error
