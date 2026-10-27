@@ -42,6 +42,10 @@ if (prev && cmp(version, prev.version) <= 0) {
 const minShell = msIdx >= 0 ? args[msIdx + 1] : (prev && prev.minShell) || '0.1.0';
 if (!SEMVER.test(minShell)) { console.error('Неправильна --min-shell'); process.exit(1); }
 
+if (!fs.readFileSync(path.join(GAME, 'src', 'changes.js'), 'utf8').includes(`v:'${version}'`)) {
+  console.error(`Додайте опис версії ${version} у game/src/changes.js — гравці побачать його у вікні «Що нового».`);
+  process.exit(1);
+}
 fs.writeFileSync(path.join(GAME, 'VERSION'), version + '\n');
 execFileSync(process.execPath, [path.join(GAME, 'build.js')], { stdio: 'inherit' });
 

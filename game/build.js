@@ -9,7 +9,7 @@ const path = require('path');
 const ROOT = __dirname;
 const SRC = path.join(ROOT, 'src');
 const DIST = path.join(ROOT, 'dist');
-const JS_ORDER = ['data.js', 'scen.js', 'engine.js', 'art.js', 'ui.js', 'net.js', 'tut.js'];
+const JS_ORDER = ['data.js', 'scen.js', 'engine.js', 'art.js', 'ui.js', 'net.js', 'tut.js', 'changes.js'];
 
 const read = f => fs.readFileSync(path.join(SRC, f), 'utf8');
 const version = fs.readFileSync(path.join(ROOT, 'VERSION'), 'utf8').trim();
@@ -20,7 +20,7 @@ const boot = `
 document.body.insertAdjacentHTML('afterbegin',ICONS);
 addEventListener('scroll',()=>{if(scrollY||scrollX)scrollTo(0,0)});document.addEventListener('scroll',e=>{const t=e.target;if(t===document||t===document.documentElement||t===document.body||t.id==='app'||t.id==='game'){if(t.scrollTop)t.scrollTop=0}},true);
 addEventListener('resize',()=>{if(ui.scr==='game'&&S)render()});
-render();saveInit();
+render();saveInit();whatsNewInit();
 `;
 const fonts = `<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Alegreya+Sans:wght@400;500;700;800&family=PT+Mono&display=swap">`;

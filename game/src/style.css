@@ -185,3 +185,5 @@ button.cont{display:flex;flex-direction:column;align-items:center;gap:2px}button
 .lanpeer .dot{background:#555;margin-right:0}
 .lanbadge{border-color:var(--ok)!important;color:var(--ok)}
 .opt span small{font-weight:400}
+.ver{margin-top:-6px}.linkbtn{background:none;border:0;padding:0;color:var(--ac);text-decoration:underline;font-size:inherit;cursor:pointer}
+.news{display:grid;gap:12px}.newsv ul{margin:4px 0 0;padding-left:20px}.newsv li{margin-bottom:3px}

@@ -1,8 +1,8 @@
 {
-  "version": "1.2.0",
-  "file": "game-1.2.0.zip",
-  "size": 68475,
-  "sha256": "7db502ac7a5f72b475cde594415081610f979eb69d38c762301babf134a22912",
+  "version": "1.2.1",
+  "file": "game-1.2.1.zip",
+  "size": 69621,
+  "sha256": "fc6fb2926af2f851e75fd23aaffc714b397fc25667def56cba1dd691b6988bbc",
   "minShell": "0.1.0",
-  "date": "2026-10-27T20:23:51.654Z"
+  "date": "2026-10-27T21:46:55.649Z"
 }
