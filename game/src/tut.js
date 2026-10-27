@@ -80,12 +80,13 @@ const TSTEPS=[
 {k:'wait',re:/Маг надихає/,t:'Маг у Бібліотеці: там немає ні монстрів, ні скарбу, тож він <b>просувається</b> до Кузні й надихає виснажену пройдисвітку. Зараз вони обоє вдарять Дракона.'},
 {k:'wait',re:/Хід: Дракон/,t:'<b>Вторгнення завершено.</b> Скарб 4 у безпеці, тож хід переходить до Дракона. Ви пройшли повний хід гравця так, як у правилах!',fin:1}
 ];
+// Колода прикладу з правил (не залежить від справжньої колоди Щурника)
+const TUT_RAT=[['Зграя / Атака',[[{sw:'mv'}],['mel']]],['Нишпорка',[['act','act'],['mv']]],['Дрібні справи',[['act','act'],['mel']]],['Хвостики',[[{sw:'mv'}],['def']]],['Перебіжка',[['mv'],['def','card']]],['Зграя: гризи',[[{sw:'mel'}],['mv']]],['Запаси',[['act','act'],['card']]],['Укус',[['mel'],['mv']]],['Нора',[[{amb:[3,'bones']}]]],['Знахідка',[['coin','mv'],['card']]]];
 function startTutorial(){
- DECKS.rat[4]=['Перебіжка',[['mv'],['def','card']]];
  newGame({sc:3,df:'h',clans:['rat','dragon']});
  S.tut={on:1,noDef:1};S.setupQ=[];S.ph=1;S.cur=0;S.wave=2;
  const rat=S.pl[0],dr=S.pl[1];
- const mk=(cl,i)=>{const [n,o]=DECKS[cl][i];return {n,o,cl}};
+ const mk=(cl,i)=>{const [n,o]=(cl==='rat'?TUT_RAT:DECKS[cl])[i];return {n,o,cl}};
  rat.hand=[0,1,2,3,4].map(i=>mk('rat',i));rat.deck=[5,6,7,8,9].map(i=>mk('rat',i));rat.disc=[];
  dr.hand=[0,1,2,3,4].map(i=>mk('dragon',i));dr.deck=shuffle([5,6,7,8,9].map(i=>mk('dragon',i)));
  S.rm.forEach(r=>{r.m=[];r.h=[];r.ev=[]});

@@ -200,11 +200,14 @@ function* aSwarm(X){const rooms=ownRooms();const r=yield* pick(rooms,`Зграя
  return {room:r}}
 function* aSurge(A,B){const res=yield* doTok(A);if(!res)return null;
  const free=yield* ask(`Навала вдалася! Безкоштовно: ${ACTN[tokLabel(B)]||(B.sum?'виклик '+B.sum+' монстрів':'виклик монстра')}?`,[{l:'Так',v:1},{l:'Ні',v:0}]);
- if(free){if(B==='sum1')yield* aSummonInto(res.room,1);else if(B.sum)yield* aSummonInto(res.room,B.sum);else yield* doTok(B)}
+ if(free){if(B==='sum1')yield* aSummonInto(res.room,1);else if(B.sum)yield* aSummonInto(res.room,B.sum);else yield* doTok(B,res.room!=null?{room:res.room}:null)}
  return res}
+// чи є на карті дія X (враховуючи Зграю, Навалу; 'amb' — будь-який виклик монстрів)
+function tokHas(t,X){if(t==null)return false;if(typeof t==='string')return t===X||(X==='amb'&&t==='sum1');if(t.sw)return X==='sw'||t.sw===X;if(t.amb)return X==='amb';if(t.sum)return X==='amb';if(t.nv)return X==='nv'||tokHas(t.nv[0],X)||tokHas(t.nv[1],X);if(t.rf)return X==='rf';return false}
+const cardHas=(c,X)=>c.o.some(o=>o.some(t=>tokHas(t,X)));
 function* aReinforce(X){const p=P(),got=[],rest=[];const seen=[];
  for(let i=0;i<3;i++){if(!p.deck.length){if(!p.disc.length)break;p.deck=shuffle(p.disc.splice(0))}seen.push(p.deck.shift())}
- seen.forEach(c=>{if(c.o.some(o=>o.some(t=>t===X||(t&&t.sw===X))))got.push(c);else rest.push(c)});
+ seen.forEach(c=>{if(cardHas(c,X))got.push(c);else rest.push(c)});
  p.hand.push(...got);p.disc.push(...rest);
  yield {t:'show',title:`Зміцнення: шукаємо «${ACTN[X]}»`,cards:seen,take:got.map(c=>c.n)};
  yield* F(`${pName(S.cur)} переглядає 3 карти: бере ${got.length}, скидає ${rest.length}`);return {room:null}}
